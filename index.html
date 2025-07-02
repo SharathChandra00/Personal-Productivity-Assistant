@@ -39,17 +39,19 @@
 
     .task-input {
       display: flex;
+      flex-direction: column;
       gap: 10px;
       margin-bottom: 20px;
     }
 
-    .task-input input {
-      flex: 1;
+    .task-input input,
+    .task-input input[type="datetime-local"] {
       padding: 12px;
       border: none;
       border-radius: 8px;
       outline: none;
       font-size: 16px;
+      color: #333;
     }
 
     .task-input button {
@@ -82,6 +84,14 @@
       justify-content: space-between;
       align-items: center;
       color: #fff;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    ul#taskList li .top {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
     }
 
     .completed {
@@ -92,6 +102,7 @@
     .actions {
       display: flex;
       gap: 10px;
+      margin-top: 8px;
     }
 
     .actions button {
@@ -136,53 +147,55 @@
 </head>
 <body>
 
-  <!-- Main Container -->
   <div class="container">
-    <h1>📋TaskNest :Personal Productivity Assistant</h1>
+    <h1>📋 TaskNest: Personal Productivity Assistant</h1>
     <div class="task-input">
       <input type="text" id="taskInput" placeholder="Enter your task..." />
+      <input type="datetime-local" id="deadlineInput" />
       <button onclick="addTask()">Add</button>
     </div>
     <ul id="taskList"></ul>
 
-    <!-- Report Page Button -->
     <div class="report-btn">
       <button onclick="window.location.href='report.html'" class="nav-btn">📈 View Report</button>
     </div>
   </div>
 
-  <!-- Register / Sign In Buttons BELOW container -->
   <div class="auth-buttons">
     <button onclick="alert('Register page not implemented')" class="nav-btn">Register</button>
     <button onclick="alert('Sign In page not implemented')" class="nav-btn">Sign In</button>
   </div>
 
-  <!-- JavaScript -->
   <script>
     const taskInput = document.getElementById('taskInput');
+    const deadlineInput = document.getElementById('deadlineInput');
     const taskList = document.getElementById('taskList');
 
-    // Load saved tasks
     window.onload = () => {
       const saved = JSON.parse(localStorage.getItem('tasks')) || [];
-      saved.forEach(task => createTask(task.text, task.completed));
+      saved.forEach(task => createTask(task.text, task.deadline, task.completed));
     };
 
     function addTask() {
       const taskText = taskInput.value.trim();
+      const deadline = deadlineInput.value;
       if (taskText !== '') {
-        createTask(taskText, false);
+        createTask(taskText, deadline, false);
         saveTasks();
         taskInput.value = '';
+        deadlineInput.value = '';
       }
     }
 
-    function createTask(text, isCompleted) {
+    function createTask(text, deadline, isCompleted) {
       const li = document.createElement('li');
       if (isCompleted) li.classList.add('completed');
 
+      const content = document.createElement('div');
+      content.className = 'top';
+
       const span = document.createElement('span');
-      span.textContent = text;
+      span.innerHTML = `<strong>${text}</strong><br/><small>🕒 ${deadline ? new Date(deadline).toLocaleString() : 'No deadline'}</small>`;
 
       const actions = document.createElement('div');
       actions.className = 'actions';
@@ -203,7 +216,8 @@
 
       actions.appendChild(doneBtn);
       actions.appendChild(deleteBtn);
-      li.appendChild(span);
+      content.appendChild(span);
+      li.appendChild(content);
       li.appendChild(actions);
       taskList.appendChild(li);
     }
@@ -211,8 +225,12 @@
     function saveTasks() {
       const tasks = [];
       document.querySelectorAll('#taskList li').forEach(li => {
+        const html = li.querySelector('span').innerHTML;
+        const textMatch = html.match(/<strong>(.*?)<\/strong>/);
+        const deadlineMatch = html.match(/🕒 (.*?)<\/small>/);
         tasks.push({
-          text: li.querySelector('span').textContent,
+          text: textMatch ? textMatch[1] : '',
+          deadline: deadlineMatch ? new Date(deadlineMatch[1]).toISOString() : '',
           completed: li.classList.contains('completed')
         });
       });
